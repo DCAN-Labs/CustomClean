@@ -1,42 +1,54 @@
 #! /usr/global/bin/python
 
+# ------------------------------------------------------------------------
+# CustomClean GUI version 1.0.0
+#  
+# GUI that helps a user create a JSON showing a pattern of unwanted files/folders/links
+# that can be later applied to many directories using the main CustomClean script.
+#
+# Rachel Klein, November 2016
+
 import sys
 import os
-import re
 import json
-import datetime
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 
 def are_parent_and_child(parent, child):
+    """Determines whether items on file tree checklist are parent and child."""
     while child.isValid():
         if child == parent:
             return True
         child = child.parent()
     return False
 
+
 class SelectionWindow(QtGui.QDialog):
+    """GUI window where user selects items to be deleted in the chosen directory."""
+
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
 
         layout = QtGui.QVBoxLayout(self)
 
-        # Add checkable directory tree
+        # Add checkable directory tree defined in CheckableDirModel
         model = CheckableDirModel()
         self.view = QtGui.QTreeView()
         self.view.setModel(model)
         self.view.setColumnWidth(0, 800)
 
+        # Set root directory to example path chosen earlier by user
         self.view.setRootIndex(model.index(example_path))
         
+	
+	# Set appearance of SelectionWindow object
         self.resize(1000, 500)
         self.setWindowTitle("Choose Items to Delete")
-        
         layout.addWidget(self.view)
 
-        # Add OK and Cancel buttons
+        # OK and Cancel buttons
         buttons = QtGui.QDialogButtonBox(
             QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel,
             QtCore.Qt.Horizontal, self)
@@ -45,17 +57,21 @@ class SelectionWindow(QtGui.QDialog):
         layout.addWidget(buttons)
 
 class CheckableDirModel(QtGui.QDirModel):
+    """Model that populates SelectionWindow with a checkable directory tree."""
     def __init__(self, parent=None):
         QtGui.QDirModel.__init__(self, None)
         self.checks = {}
+
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
             return self.checkState(index)
         return QtGui.QDirModel.data(self, index, role)
 
+
     def flags(self, index):
         return QtGui.QDirModel.flags(self, index) | QtCore.Qt.ItemIsUserCheckable
+
 
     def checkState(self, index):
         while index.isValid():
@@ -63,6 +79,7 @@ class CheckableDirModel(QtGui.QDirModel):
                 return self.checks[index]
             index = index.parent()
         return QtCore.Qt.Unchecked
+
 
     def setData(self, index, value, role):
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
@@ -76,19 +93,19 @@ class CheckableDirModel(QtGui.QDirModel):
 
         return QtGui.QDirModel.setData(self, index, value, role)
 
+
     def get_savepath(self):
+        """Allow user to set name and directory of JSON to be created."""
         savepath = str(QFileDialog.getSaveFileName(anchor_win, 'Save As'))
-
-        if not savepath.endswith('.json'):
+        if not savepath.endswith('.json'):  #Add file extension if user didn't
             savepath += '.json'
+        return savepath
 
-	return savepath
 
-    # Provide user-friendly message about what happened
     def end_message(self, text):
-
+        """Provide user-friendly information about whether JSON creation was successful."""
         msg = QMessageBox()
-	msg.setIcon(QMessageBox.Information)
+        msg.setIcon(QMessageBox.Information)
 	msg.setText(text)
 	msg.setWindowTitle('JSON creation process finished')
 
@@ -97,53 +114,59 @@ class CheckableDirModel(QtGui.QDirModel):
 
 
     def get_directory_structure(self):
-
+        """
+        Based on user's selections, record relative paths and deletion state of all files in chosen
+        directory in a nested dictionary.
+        """
         dir_dict = {}
         rootdir = example_path.rstrip(os.sep)
         start = rootdir.rfind(os.sep) + 1
+
         for path, dirs, files in os.walk(rootdir):
             path_as_list = path[start:].split(os.sep)
 
             files_in_dir = {'files': {}}
+
             for f in files:
 
                 filepath = os.path.join(path, f)
                 rel_path = os.path.relpath(filepath, rootdir).lstrip(os.sep)
-
+ 
+                # Record relative path for each file
 		if ('REST' not in rel_path) or ('1' in rel_path):
                     files_in_dir['files'][f] = {}
                     if rel_path == f:
                         rel_path = '.'
                     files_in_dir['files'][f]['rel_path'] = rel_path
 
+                # Record whether each file was marked as 'keep' or 'delete' based on checked status
                 if f in files_in_dir['files']:
                     if self.checkState(self.index(os.path.join(path, f))) == QtCore.Qt.Checked:
                         files_in_dir['files'][f]['state'] = 'delete'
                     else:
                         files_in_dir['files'][f]['state'] = 'keep'                    
 
+            # Create master dictionary with all file/directory information
             full_dir = reduce(dict.get, path_as_list[:-1], dir_dict)
             full_dir[path_as_list[-1]] = files_in_dir
 
         return dir_dict
 
+
     def makeJSON(self):
-
+        """Add information from get_directory_structure to a JSON."""
 	d = self.get_directory_structure()
-
 	savepath = self.get_savepath()
-
 	try:
 	    with open(savepath, 'w') as json_file:
                 json.dump(d, json_file, indent=4)
                 msg_text = 'JSON created successfully.'
         except:
 	    msg_text = 'JSON creation process was not successful. Please try again.'
-
 	self.end_message(msg_text)
 
+        # Make all windows disappear after end message window is closed
         QtCore.QCoreApplication.instance().quit()
-
 
 if __name__ == '__main__':
 
@@ -151,10 +174,11 @@ if __name__ == '__main__':
 
     anchor_win = QMainWindow()
 
+    # Allow user to choose directory to populate checkable directory model
     example_path = str(QFileDialog.getExistingDirectory(anchor_win, 'Select Example Directory'))
 
+    # Create and display custom SelectionWindow
     win = SelectionWindow()
-
     win.show()
 
     sys.exit(app.exec_())

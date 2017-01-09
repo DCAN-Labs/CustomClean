@@ -53,8 +53,7 @@ def get_dirs_to_delete(d):
                     dir_to_delete = '/'.join(files[dir_child_key]['rel_path'].split('/')[0:-1])
                     to_delete.append(dir_to_delete)
 
-# User enters path to JSON, then path to folder on which to apply cleaning pattern within JSON
-
+# Arguments are path to JSON, then path to folder on which to apply cleaning pattern within JSON
 try:
     with open(sys.argv[1]) as j:
         json_data = json.load(j)
@@ -66,21 +65,28 @@ base_path = sys.argv[2]
 if not base_path.endswith('/'):
     base_path = base_path + '/'
 
+# Make list of all files/folders/etc. to be removed
 get_files_to_delete(json_data)
 get_dirs_to_delete(json_data)
 
+# Make sure all entries within to_delete are unique
 to_delete = list(set(to_delete))
 
+# Create absolute paths for items in to_delete and delete them
 paths = []
 
-if all(to_delete):
+if all(to_delete):  #If there are no false/empty values in to_delete
     for d in to_delete:
         abs_path = ntpath.join(base_path, d)
 	paths.append(abs_path)
 	# Create corresponding paths for REST2 to REST20 if REST1 is present
         if 'REST1' in abs_path:
             for x in xrange(2, 21):
-                paths.append(abs_path.replace('1', str(x)))
+                rest_str = 'REST' + str(x)
+                paths.append(abs_path.replace('REST1', rest_str))
+
+# Delete/remove/unlink all specified files/directories/links
+# If some items cannot be located, notify user
 
 for p in paths:
     str_p = str(p)
