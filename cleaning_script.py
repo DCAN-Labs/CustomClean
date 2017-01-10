@@ -6,7 +6,7 @@
 # Cleanup script that removes unwanted files/folders/links in a given directory
 # based on a JSON created by the CustomClean GUI.
 #
-# Rachel Klein, November 2016
+# Rachel Klein, January 2017
 
 import sys
 import os
@@ -65,6 +65,14 @@ base_path = sys.argv[2]
 if not base_path.endswith('/'):
     base_path = base_path + '/'
 
+# Get number of REST folders
+rest_num = 0
+for k in json_data:
+    if type(json_data[k]) == dict:
+        for subk in json_data[k]:
+            if 'REST' in subk:
+                rest_num += 1
+
 # Make list of all files/folders/etc. to be removed
 get_files_to_delete(json_data)
 get_dirs_to_delete(json_data)
@@ -79,14 +87,17 @@ if all(to_delete):  #If there are no false/empty values in to_delete
     for d in to_delete:
         abs_path = ntpath.join(base_path, d)
 	paths.append(abs_path)
-	# Create corresponding paths for REST2 to REST20 if REST1 is present
+	# Create corresponding paths for all other REST folders if REST1 is present
         if 'REST1' in abs_path:
-            for x in xrange(2, 21):
-                rest_str = 'REST' + str(x)
-                paths.append(abs_path.replace('REST1', rest_str))
+            if rest_num:
+                for x in xrange(2, rest_num + 1):
+                    rest_str = 'REST' + str(x)
+                    paths.append(abs_path.replace('REST1', rest_str))
 
 # Delete/remove/unlink all specified files/directories/links
 # If some items cannot be located, notify user
+
+not_found = 'Expected and could not find: '
 
 for p in paths:
     str_p = str(p)
@@ -114,6 +125,6 @@ for p in paths:
 	    print 'You do not have permissions to delete all of the specified files. Exiting...'
             sys.exit()
     else:
-	print '\nExpected and could not find:'
-	print str_p
+	not_found += '\n' + str_p
 
+print not_found
