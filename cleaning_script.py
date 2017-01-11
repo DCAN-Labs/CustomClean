@@ -15,7 +15,6 @@ import json
 import ntpath
 
 to_delete = []
-dirs_to_delete = []
 
 def get_files_to_delete(d):    
     for k in d:
@@ -23,7 +22,7 @@ def get_files_to_delete(d):
             get_files_to_delete(d[k])
         else:
             if d[k]['state'] == 'delete':
-                to_delete.append(d[k]['rel_path'])
+                to_delete.insert(0, d[k]['rel_path'])
 
 
 def get_file_states(d):
@@ -52,7 +51,6 @@ def get_dirs_to_delete(d):
                     dir_child_key = files.keys()[-1]
                     dir_to_delete = '/'.join(files[dir_child_key]['rel_path'].split('/')[0:-1])
                     to_delete.append(dir_to_delete)
-                    dirs_to_delete.append(dir_to_delete)
 
 # Arguments are path to JSON, then path to folder on which to apply cleaning pattern within JSON
 try:
@@ -75,11 +73,9 @@ for k in json_data:
                 rest_num += 1
 
 # Make list of all files/folders/etc. to be removed
-get_files_to_delete(json_data)
-get_dirs_to_delete(json_data)
-
-# Make sure all entries within to_delete are unique
-to_delete = list(set(to_delete))
+get_dirs_to_delete(json_data)  # Get directories first
+to_delete.reverse()  # Make sure lower level directories get deleted before those above them
+get_files_to_delete(json_data)  # Now add files at beginning so they get deleted first of all
 
 # Create absolute paths for items in to_delete and delete them
 paths = []
@@ -96,7 +92,7 @@ if all(to_delete):  #If there are no false/empty values in to_delete
                     paths.append(abs_path.replace('REST1', rest_str))
 
 # Delete/remove/unlink all specified files/directories/links
-# If some items cannot be located, notify user
+# If anything is not found, print message.
 
 not_found = 'Expected and could not find: '
 
@@ -125,12 +121,7 @@ for p in paths:
 	    print 'You do not have permissions to delete all of the specified files. Exiting...'
             sys.exit()
     else:
-        # If path is for a file, and parent directory was already deleted, do not show error output
-        if os.path.isfile(str_p):
-            parent_dir = '/'.join(str_p.split('/')[0:-1])
-            if parent_dir in dirs_to_delete:
-                continue
-	not_found += '\n' + str_p
+        not_found += '\n' + str_p
 
-if not not_found.endswith(':'):
+if not not_found.endswith(' '):  # If any text has been added to not_found
     print not_found
