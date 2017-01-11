@@ -3,10 +3,10 @@
 # ------------------------------------------------------------------------
 # CustomClean GUI version 1.0.0
 #  
-# GUI that helps a user create a JSON showing a pattern of unwanted files/folders/links
+# GUI that helps user create a JSON showing a pattern of unwanted files/folders/links
 # that can be later applied to many directories using the main CustomClean script.
 #
-# Rachel Klein, November 2016
+# Rachel Klein, January 2017
 
 import sys
 import os
@@ -135,8 +135,6 @@ class CheckableDirModel(QtGui.QDirModel):
                 # Record relative path for each file
 		if ('REST' not in rel_path) or ('1' in rel_path):
                     files_in_dir['files'][f] = {}
-                    if rel_path == f:
-                        rel_path = '.'
                     files_in_dir['files'][f]['rel_path'] = rel_path
 
                 # Record whether each file was marked as 'keep' or 'delete' based on checked status
