@@ -15,7 +15,7 @@ import json
 import ntpath
 
 to_delete = []
-
+dirs_to_delete = []
 
 def get_files_to_delete(d):    
     for k in d:
@@ -52,6 +52,7 @@ def get_dirs_to_delete(d):
                     dir_child_key = files.keys()[-1]
                     dir_to_delete = '/'.join(files[dir_child_key]['rel_path'].split('/')[0:-1])
                     to_delete.append(dir_to_delete)
+                    dirs_to_delete.append(dir_to_delete)
 
 # Arguments are path to JSON, then path to folder on which to apply cleaning pattern within JSON
 try:
@@ -102,7 +103,6 @@ not_found = 'Expected and could not find: '
 for p in paths:
     str_p = str(p)
     
-    # TODO: Test with symbolic links
     if os.path.isdir(str_p):
 	try:
 	    shutil.rmtree(str_p)
@@ -125,6 +125,12 @@ for p in paths:
 	    print 'You do not have permissions to delete all of the specified files. Exiting...'
             sys.exit()
     else:
+        # If path is for a file, and parent directory was already deleted, do not show error output
+        if os.path.isfile(str_p):
+            parent_dir = '/'.join(str_p.split('/')[0:-1])
+            if parent_dir in dirs_to_delete:
+                continue
 	not_found += '\n' + str_p
 
-print not_found
+if not not_found.endswith(':'):
+    print not_found
