@@ -124,9 +124,11 @@ for p in paths:
     else:
         not_found += '\n' + str_p
 
-if not not_found.endswith(' '):  # If any text has been added to not_found
+# Print error output if applicable
+if not not_found.endswith(' '):
     print not_found
 
+# Save success output to file
 os.chdir(base_path)
 success_file = open('custom_clean_success_record.txt', 'w')
 success_file.write(success)
