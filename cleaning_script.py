@@ -95,6 +95,7 @@ if all(to_delete):  #If there are no false/empty values in to_delete
 # If anything is not found, print message.
 
 not_found = 'Expected and could not find: '
+success = ''
 
 for p in paths:
     str_p = str(p)
@@ -102,21 +103,21 @@ for p in paths:
     if os.path.isdir(str_p):
 	try:
 	    shutil.rmtree(str_p)
-	    print 'Removing directory ' + str_p 
+	    success += 'Removed directory ' + str_p + '\n'
 	except IOError, OSError:
 	    print 'You do not have permissions to delete all of the specified directories. Exiting...'
             sys.exit()
     elif os.path.islink(str_p):
 	try:
 	    os.unlink(str_p)
-	    print 'Unlinking ' + str_p 
+	    success += 'Unlinked ' + str_p + '\n'
 	except IOError, OSError:
 	    print 'You do not have permissions to remove all of the specified links. Exiting...'
             sys.exit()
     elif os.path.isfile(str_p):
 	try:
 	    os.remove(str_p)
-	    print 'Removing file ' + str_p 
+	    success += 'Removed file ' + str_p + '\n'
 	except IOError, OSError:
 	    print 'You do not have permissions to delete all of the specified files. Exiting...'
             sys.exit()
@@ -125,3 +126,7 @@ for p in paths:
 
 if not not_found.endswith(' '):  # If any text has been added to not_found
     print not_found
+
+os.chdir(base_path)
+success_file = open('custom_clean_success_record.txt', 'w')
+success_file.write(success)
