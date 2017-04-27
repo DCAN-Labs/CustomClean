@@ -37,7 +37,8 @@ class SelectionWindow(QtGui.QDialog):
         model = CheckableDirModel()
         self.view = QtGui.QTreeView()
         self.view.setModel(model)
-        self.view.setColumnWidth(0, 800)
+	self.view.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.view.header().setStretchLastSection(False)
 
         # Set root directory to example path chosen earlier by user
         self.view.setRootIndex(model.index(example_path))
