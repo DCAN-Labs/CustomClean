@@ -37,12 +37,15 @@ class SelectionWindow(QtGui.QDialog):
         model = CheckableDirModel()
         self.view = QtGui.QTreeView()
         self.view.setModel(model)
+	# TODO: Ask if these next two lines fix resizing issue
 	self.view.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.view.header().setStretchLastSection(False)
 
+	# TODO: Adjust next line - not working
+        self.view.setEditTriggers(QtGui.QAbstractItemView.DoubleClicked)
+
         # Set root directory to example path chosen earlier by user
         self.view.setRootIndex(model.index(example_path))
-        
 	
 	# Set appearance of SelectionWindow object
         self.resize(1000, 500)
@@ -71,7 +74,7 @@ class CheckableDirModel(QtGui.QDirModel):
 
 
     def flags(self, index):
-        return QtGui.QDirModel.flags(self, index) | QtCore.Qt.ItemIsUserCheckable
+        return QtGui.QDirModel.flags(self, index) | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEditable
 
 
     def checkState(self, index):
