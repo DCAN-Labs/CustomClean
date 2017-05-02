@@ -13,8 +13,36 @@ import os
 import shutil
 import json
 import ntpath
+import argparse
 
 to_delete = []
+
+PROG = 'CustomClean'
+VERSION = '1.1.0'
+LAST_MOD = '4-27-16'
+
+program_desc = """%(prog)s v%(ver)s:
+Cleanup script that removes unwanted files/folders/links in a given directory
+based on a JSON created by the CustomClean GUI.
+Use -j /path/to/cleaning/JSON and -d /path/to/directory/to/be/cleaned.
+#""" % {'prog': PROG, 'ver': VERSION}
+
+
+def get_parser():
+
+    parser = argparse.ArgumentParser(description=program_desc, prog=PROG, version=VERSION)
+
+    parser.add_argument('-j', '--json', dest='json', required=True,
+                        help="""Absolute path to a cleaning JSON as created by the CustomClean
+GUI.""")
+
+    parser.add_argument('-d', '--dir', dest='dir', required=True,
+                        help="""Absolute path to a folder that needs cleaning.
+Should have an identical folder structure to the one in the cleaning JSON.""")
+
+    return parser
+
+
 
 def get_files_to_delete(d):    
     for k in d:
@@ -52,15 +80,22 @@ def get_dirs_to_delete(d):
                     dir_to_delete = '/'.join(files[dir_child_key]['rel_path'].split('/')[0:-1])
                     to_delete.append(dir_to_delete)
 
+
+### MAIN SCRIPT ###
+
+parser = get_parser()
+
+args = parser.parse_args()
+
 # Arguments are path to JSON, then path to folder on which to apply cleaning pattern within JSON
 try:
-    with open(sys.argv[1]) as j:
+    with open(args.json) as j:
         json_data = json.load(j)
 except IOError:
     print 'The specified cleaning JSON could not be found. Exiting...'
     sys.exit()
 
-base_path = sys.argv[2]
+base_path = args.dir
 if not base_path.endswith('/'):
     base_path = base_path + '/'
 
