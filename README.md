@@ -25,3 +25,7 @@
   * Success information (i.e. what files, directories, and links were removed)
   will be written to a file at the top level of the target directory called
   `custom_clean_success_record.txt`.
+
+  * NOTE: * may now be used as a wildcard in filenames when running the cleaning script on
+  target directories, e.g. for subject IDs in filenames. As of this writing, it involves
+  manually editing the JSON before running the cleaning script.
