@@ -14,6 +14,7 @@ import shutil
 import json
 import ntpath
 import argparse
+import glob
 
 to_delete = []
 
@@ -118,7 +119,13 @@ paths = []
 if all(to_delete):  #If there are no false/empty values in to_delete
     for d in to_delete:
         abs_path = ntpath.join(base_path, d)
-	paths.append(abs_path)
+        # Deal with paths that have wildcards in them
+	if '*' in abs_path:
+            wildcard_paths = glob.glob(abs_path)
+            paths.extend(wildcard_paths)
+        else:
+            paths.append(abs_path)
+
 	# Create corresponding paths for all other REST folders if REST1 is present
         if 'REST1' in abs_path:
             if rest_num:
