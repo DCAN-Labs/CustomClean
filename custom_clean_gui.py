@@ -74,7 +74,7 @@ class CheckableDirModel(QtGui.QDirModel):
 
 
     def flags(self, index):
-        return QtGui.QDirModel.flags(self, index) | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEditable
+        return QtGui.QDirModel.flags(self, index) | QtCore.Qt.ItemIsUserCheckable
 
 
     def checkState(self, index):
