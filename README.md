@@ -1,4 +1,4 @@
-# CustomClean 1.0
+# CustomClean 1.1
 > For HCP outputs and other things you need to clean up!
 
 ## Usage
@@ -11,9 +11,7 @@
   * In new file tree window, choose folders or files to **delete**, then click `OK`.
     * *Please note: If working with a subject folder that contains multiple
     REST directories, any changes made to REST1 will be applied to all other
-    REST directories. Changes made to any rest directories other than REST1 will be ignored.*
-  * If you need to replace a subject ID or any other information that is not generalizable,
-    double click on the filename and rename the file using * as a wildcard.
+    REST directories. Changes made to any REST directories other than REST1 will be ignored.*
   * Choose a directory and filename for your JSON file and click `Save`.
   * The GUI will notify you whether your JSON was created successfully.
 
