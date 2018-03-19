@@ -1,7 +1,7 @@
 #! /usr/global/bin/python
 
 # ------------------------------------------------------------------------
-# CustomClean version 1.0.0
+# CustomClean version 1.2.0
 #  
 # Cleanup script that removes unwanted files/folders/links in a given directory
 # based on a JSON created by the CustomClean GUI.
@@ -40,6 +40,11 @@ GUI.""")
     parser.add_argument('-d', '--dir', dest='dir', required=True,
                         help="""Absolute path to a folder that needs cleaning.
 Should have an identical folder structure to the one in the cleaning JSON.""")
+
+    parser.add_argument('-p', '--pattern', dest='pattern', required=False,
+                        help="""String that a series of folders that should be
+treated identically will contain. e.g. REST will cause REST1, REST2, etc. to 
+follow deletion pattern given for contents of REST1 in the cleaning JSON.""")
 
     return parser
 
@@ -100,13 +105,16 @@ base_path = args.dir
 if not base_path.endswith('/'):
     base_path = base_path + '/'
 
-# Get number of REST folders
-rest_num = 0
-for k in json_data:
-    if type(json_data[k]) == dict:
-        for subk in json_data[k]:
-            if 'REST' in subk:
-                rest_num += 1
+if args.pattern:
+    pattern = args.pattern
+
+    # Get number of folders following pattern given
+    pattern_num = 0
+    for k in json_data:
+        if type(json_data[k]) == dict:
+            for subk in json_data[k]:
+                if pattern in subk:
+                    pattern_num += 1
 
 # Make list of all files/folders/etc. to be removed
 get_dirs_to_delete(json_data)  # Get directories first
@@ -126,12 +134,14 @@ if all(to_delete):  #If there are no false/empty values in to_delete
         else:
             paths.append(abs_path)
 
-	# Create corresponding paths for all other REST folders if REST1 is present
-        if 'REST1' in abs_path:
-            if rest_num:
-                for x in xrange(2, rest_num + 1):
-                    rest_str = 'REST' + str(x)
-                    paths.append(abs_path.replace('REST1', rest_str))
+        if args.pattern:
+    	    # Create corresponding paths for all other folders containing pattern if [pattern]1 is present
+            pattern1 = pattern + '1'
+            if pattern in abs_path:
+                if pattern_num:
+                    for x in xrange(2, pattern_num + 1):
+                        pattern_str = pattern + str(x)
+                        paths.append(abs_path.replace(pattern1, pattern_str))
 
 # Delete/remove/unlink all specified files/directories/links
 # If anything is not found, print message.
