@@ -164,45 +164,44 @@ def make_paths(items_to_delete):
     return paths
 
 
-### MAIN SCRIPT ###
+if __name__ == '__main__':
 
-parser = get_parser()
+    parser = get_parser()
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-# Arguments are path to JSON, then path to folder on which to apply cleaning pattern within JSON
-try:
-    with open(args.json) as j:
-        json_data = json.load(j)
-except IOError:
-    print 'The specified cleaning JSON could not be found. Exiting...'
-    sys.exit()
+    # Arguments are path to JSON, then path to folder on which to apply cleaning pattern within JSON
+    try:
+        with open(args.json) as j:
+            json_data = json.load(j)
+    except IOError:
+        print 'The specified cleaning JSON could not be found. Exiting...'
+        sys.exit()
 
-base_path = args.dir
-if not base_path.endswith('/'):
-    base_path = base_path + '/'
+    base_path = args.dir
+    if not base_path.endswith('/'):
+        base_path = base_path + '/'
 
-if args.pattern:
-    pattern = args.pattern
-    dirs_with_pattern = get_num_dirs(pattern)
+    if args.pattern:
+        pattern = args.pattern
+        dirs_with_pattern = get_num_dirs(pattern)
 
-# Make list of all files/folders/etc. to be removed
-get_dirs_to_delete(json_data)  # Get directories first
-to_delete.reverse()  # Make sure lower level directories get deleted before those above them
-get_files_to_delete(json_data)  # Now add files at beginning so they get deleted first of all
+    # Make list of all files/folders/etc. to be removed
+    get_dirs_to_delete(json_data)  # Get directories first
+    to_delete.reverse()  # Make sure lower level directories get deleted before those above them
+    get_files_to_delete(json_data)  # Now add files at beginning so they get deleted first of all
 
-# Create absolute paths for items in to_delete and delete them
-paths = make_paths(to_delete)
+    # Create absolute paths for items in to_delete
+    paths = make_paths(to_delete)
 
-# Delete/remove/unlink all specified files/directories/links
+    # Delete/remove/unlink all specified files/directories/links
+    not_found_msg, success_msg = remove(paths)
 
-not_found_msg, success_msg = remove(paths)
+    # Print output about files not found if applicable
+    if '\n' in not_found_msg:
+        print not_found_msg
 
-# Print output about files not found if applicable
-if '\n' in not_found_msg:
-    print not_found_msg
-
-# Save success output to file
-os.chdir(base_path)
-success_file = open('custom_clean_success_record.txt', 'w')
-success_file.write(success_msg)
+    # Save success output to file
+    os.chdir(base_path)
+    success_file = open('custom_clean_success_record.txt', 'w')
+    success_file.write(success_msg)
