@@ -126,7 +126,7 @@ paths = []
 
 if all(to_delete):  #If there are no false/empty values in to_delete
     for d in to_delete:
-        abs_path = ntpath.join(base_path, d)
+        abs_path = os.path.join(base_path, d)
         # Deal with paths that have wildcards in them
 	if '*' in abs_path:
             wildcard_paths = glob.glob(abs_path)
