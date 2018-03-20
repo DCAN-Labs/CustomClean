@@ -184,8 +184,8 @@ for p in paths:
     else:
         not_found += '\n' + str_p
 
-# Print error output if applicable
-if not not_found.endswith(' '):
+# Print output about files not found if applicable
+if '\n' in not_found:
     print not_found
 
 # Save success output to file
