@@ -86,6 +86,18 @@ def get_dirs_to_delete(d):
                     dir_to_delete = '/'.join(files[dir_child_key]['rel_path'].split('/')[0:-1])
                     to_delete.append(dir_to_delete)
 
+def get_num_dirs(pattern):
+
+    # Get number of folders following pattern given
+    pattern_num = 0
+    for k in json_data:
+        if type(json_data[k]) == dict:
+            for subk in json_data[k]:
+                if pattern in subk:
+                    pattern_num += 1
+
+    return pattern_num
+
 
 ### MAIN SCRIPT ###
 
@@ -107,14 +119,7 @@ if not base_path.endswith('/'):
 
 if args.pattern:
     pattern = args.pattern
-
-    # Get number of folders following pattern given
-    pattern_num = 0
-    for k in json_data:
-        if type(json_data[k]) == dict:
-            for subk in json_data[k]:
-                if pattern in subk:
-                    pattern_num += 1
+    dirs_with_pattern = get_num_dirs(pattern)
 
 # Make list of all files/folders/etc. to be removed
 get_dirs_to_delete(json_data)  # Get directories first
@@ -138,8 +143,8 @@ if all(to_delete):  #If there are no false/empty values in to_delete
     	    # Create corresponding paths for all other folders containing pattern if [pattern]1 is present
             pattern1 = pattern + '1'
             if pattern in abs_path:
-                if pattern_num:
-                    for x in xrange(2, pattern_num + 1):
+                if dirs_with_pattern:
+                    for x in xrange(2, dirs_with_pattern + 1):
                         pattern_str = pattern + str(x)
                         paths.append(abs_path.replace(pattern1, pattern_str))
 
