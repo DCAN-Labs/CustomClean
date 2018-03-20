@@ -12,14 +12,13 @@ import sys
 import os
 import shutil
 import json
-import ntpath
 import argparse
 import glob
 
 to_delete = []
 
 PROG = 'CustomClean'
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 LAST_MOD = '4-27-16'
 
 program_desc = """%(prog)s v%(ver)s:
@@ -98,6 +97,43 @@ def get_num_dirs(pattern):
 
     return pattern_num
 
+def remove(target_paths):
+    """
+    Takes a list of paths to be removed/deleted/unlinked and returns information on which ones were
+    able to be deleted and which were not.
+    """
+
+    not_found = 'Expected and could not find: '
+    success = ''
+
+    for p in target_paths:
+        str_p = str(p)
+    
+        if os.path.isdir(str_p):
+	    try:
+	        shutil.rmtree(str_p)
+	        success += 'Removed directory ' + str_p + '\n'
+	    except IOError, OSError:
+	        print 'You do not have permissions to delete all of the specified directories. Exiting...'
+                sys.exit()
+        elif os.path.islink(str_p):
+	    try:
+	        os.unlink(str_p)
+	        success += 'Unlinked ' + str_p + '\n'
+	    except IOError, OSError:
+	        print 'You do not have permissions to remove all of the specified links. Exiting...'
+                sys.exit()
+        elif os.path.isfile(str_p):
+	    try:
+	        os.remove(str_p)
+	        success += 'Removed file ' + str_p + '\n'
+	    except IOError, OSError:
+	        print 'You do not have permissions to delete all of the specified files. Exiting...'
+                sys.exit()
+        else:
+            not_found += '\n' + str_p
+
+    return not_found, success
 
 ### MAIN SCRIPT ###
 
@@ -127,7 +163,7 @@ to_delete.reverse()  # Make sure lower level directories get deleted before thos
 get_files_to_delete(json_data)  # Now add files at beginning so they get deleted first of all
 
 # Create absolute paths for items in to_delete and delete them
-paths = []
+paths = make_paths(to_delete)
 
 if all(to_delete):  #If there are no false/empty values in to_delete
     for d in to_delete:
@@ -154,41 +190,13 @@ else:
 # Delete/remove/unlink all specified files/directories/links
 # If anything is not found, print message.
 
-not_found = 'Expected and could not find: '
-success = ''
-
-for p in paths:
-    str_p = str(p)
-    
-    if os.path.isdir(str_p):
-	try:
-	    shutil.rmtree(str_p)
-	    success += 'Removed directory ' + str_p + '\n'
-	except IOError, OSError:
-	    print 'You do not have permissions to delete all of the specified directories. Exiting...'
-            sys.exit()
-    elif os.path.islink(str_p):
-	try:
-	    os.unlink(str_p)
-	    success += 'Unlinked ' + str_p + '\n'
-	except IOError, OSError:
-	    print 'You do not have permissions to remove all of the specified links. Exiting...'
-            sys.exit()
-    elif os.path.isfile(str_p):
-	try:
-	    os.remove(str_p)
-	    success += 'Removed file ' + str_p + '\n'
-	except IOError, OSError:
-	    print 'You do not have permissions to delete all of the specified files. Exiting...'
-            sys.exit()
-    else:
-        not_found += '\n' + str_p
+not_found_msg, success_msg = remove(paths)
 
 # Print output about files not found if applicable
-if '\n' in not_found:
-    print not_found
+if '\n' in not_found_msg:
+    print not_found_msg
 
 # Save success output to file
 os.chdir(base_path)
 success_file = open('custom_clean_success_record.txt', 'w')
-success_file.write(success)
+success_file.write(success_msg)
