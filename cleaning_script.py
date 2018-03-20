@@ -147,6 +147,9 @@ if all(to_delete):  #If there are no false/empty values in to_delete
                     for x in xrange(2, dirs_with_pattern + 1):
                         pattern_str = pattern + str(x)
                         paths.append(abs_path.replace(pattern1, pattern_str))
+else:
+    print "Error: JSON prescribes deleting entire target directory. Please generate another JSON and try again."
+    sys.exit()
 
 # Delete/remove/unlink all specified files/directories/links
 # If anything is not found, print message.
