@@ -135,6 +135,35 @@ def remove(target_paths):
 
     return not_found, success
 
+
+def make_paths(items_to_delete):
+    paths = []
+
+    if all(items_to_delete):  #If there are no false/empty values in to_delete
+        for d in items_to_delete:
+            abs_path = os.path.join(base_path, d)
+            # Deal with paths that have wildcards in them
+	    if '*' in abs_path:
+                wildcard_paths = glob.glob(abs_path)
+                paths.extend(wildcard_paths)
+            else:
+                paths.append(abs_path)
+
+            if args.pattern:
+    	        # Create corresponding paths for all other folders containing pattern if [pattern]1 is present
+                pattern1 = pattern + '1'
+                if pattern in abs_path:
+                    if dirs_with_pattern:
+                        for x in xrange(2, dirs_with_pattern + 1):
+                            pattern_str = pattern + str(x)
+                            paths.append(abs_path.replace(pattern1, pattern_str))
+    else:
+        print "Error: JSON prescribes deleting entire target directory. Please generate another JSON and try again."
+        sys.exit()
+
+    return paths
+
+
 ### MAIN SCRIPT ###
 
 parser = get_parser()
@@ -165,30 +194,7 @@ get_files_to_delete(json_data)  # Now add files at beginning so they get deleted
 # Create absolute paths for items in to_delete and delete them
 paths = make_paths(to_delete)
 
-if all(to_delete):  #If there are no false/empty values in to_delete
-    for d in to_delete:
-        abs_path = os.path.join(base_path, d)
-        # Deal with paths that have wildcards in them
-	if '*' in abs_path:
-            wildcard_paths = glob.glob(abs_path)
-            paths.extend(wildcard_paths)
-        else:
-            paths.append(abs_path)
-
-        if args.pattern:
-    	    # Create corresponding paths for all other folders containing pattern if [pattern]1 is present
-            pattern1 = pattern + '1'
-            if pattern in abs_path:
-                if dirs_with_pattern:
-                    for x in xrange(2, dirs_with_pattern + 1):
-                        pattern_str = pattern + str(x)
-                        paths.append(abs_path.replace(pattern1, pattern_str))
-else:
-    print "Error: JSON prescribes deleting entire target directory. Please generate another JSON and try again."
-    sys.exit()
-
 # Delete/remove/unlink all specified files/directories/links
-# If anything is not found, print message.
 
 not_found_msg, success_msg = remove(paths)
 
