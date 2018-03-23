@@ -114,21 +114,21 @@ def remove(target_paths):
 	        shutil.rmtree(str_p)
 	        success += 'Removed directory ' + str_p + '\n'
 	    except IOError, OSError:
-	        print 'You do not have permissions to delete all of the specified directories. Exiting...'
+	        sys.stderr.write('You do not have permissions to delete all of the specified directories.')
                 sys.exit(code=1)
         elif os.path.islink(str_p):
 	    try:
 	        os.unlink(str_p)
 	        success += 'Unlinked ' + str_p + '\n'
 	    except IOError, OSError:
-	        print 'You do not have permissions to remove all of the specified links. Exiting...'
+	        sys.stderr.write('You do not have permissions to remove all of the specified links.')
                 sys.exit(code=2)
         elif os.path.isfile(str_p):
 	    try:
 	        os.remove(str_p)
 	        success += 'Removed file ' + str_p + '\n'
 	    except IOError, OSError:
-	        print 'You do not have permissions to delete all of the specified files. Exiting...'
+	        sys.stderr.write('You do not have permissions to delete all of the specified files.')
                 sys.exit(code=3)
         else:
             not_found += '\n' + str_p
@@ -158,7 +158,7 @@ def make_paths(items_to_delete):
                             pattern_str = pattern + str(x)
                             paths.append(abs_path.replace(pattern1, pattern_str))
     else:
-        print "Error: JSON prescribes deleting entire target directory. Please generate another JSON and try again."
+        sys.stderr.write('JSON prescribes deleting entire target directory. Please generate another JSON and try again.')
         sys.exit(code=4)
 
     return paths
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         with open(args.json) as j:
             json_data = json.load(j)
     except IOError:
-        print 'The specified cleaning JSON could not be found. Exiting...'
+        sys.stderr.write('The specified cleaning JSON could not be found.')
         sys.exit(code=5)
 
     base_path = args.dir
@@ -197,9 +197,9 @@ if __name__ == '__main__':
     # Delete/remove/unlink all specified files/directories/links
     not_found_msg, success_msg = remove(paths)
 
-    # Print output about files not found if applicable
+    # Send output about files not found to stderr if applicable
     if '\n' in not_found_msg:
-        print not_found_msg
+        sys.stderr.write(not_found_msg)
 
     # Save success output to file
     os.chdir(base_path)
