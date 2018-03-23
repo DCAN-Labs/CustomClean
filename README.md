@@ -33,7 +33,6 @@
 ## Setup
 
 Dependencies:
-  * Python 2.7
-  * PyQT4
-
-No other setup is required beyond installing the above dependencies and cloning this repo.
+  * python 2.7
+  * argparse 1.1
+  * PyQT4 (easiest to install within Anaconda)
