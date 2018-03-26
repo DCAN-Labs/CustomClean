@@ -30,9 +30,8 @@
   target directories, e.g. for subject IDs in filepaths. As of this writing, it involves
   manually editing the JSON before running the cleaning script.
 
-## Setup
-
-Dependencies:
-  * python 2.7
-  * argparse 1.1
-  * PyQT4 (easiest to install within Anaconda)
+## Installation
+1. Download Miniconda (downloads and instructions are available [here](https://conda.io/miniconda.html)).
+2. Clone custom-clean repo to the desired location.
+3. `$ conda create -n customclean --file requirements.txt`
+4. `$ source activate customclean`
