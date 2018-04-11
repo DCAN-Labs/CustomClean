@@ -1,7 +1,7 @@
 #! /usr/global/bin/python
 
 # ------------------------------------------------------------------------
-# CustomClean GUI version 1.0.0
+# CustomClean GUI version 1.2.0
 #  
 # GUI that helps user create a JSON showing a pattern of unwanted files/folders/links
 # that can be later applied to many directories using the main CustomClean script.
@@ -17,7 +17,6 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 
 def are_parent_and_child(parent, child):
-    """Determines whether items on file tree checklist are parent and child."""
     while child.isValid():
         if child == parent:
             return True
@@ -37,12 +36,10 @@ class SelectionWindow(QtGui.QDialog):
         model = CheckableDirModel()
         self.view = QtGui.QTreeView()
         self.view.setModel(model)
-	# TODO: Ask if these next two lines fix resizing issue
+
+        # Make window resize to contents
 	self.view.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.view.header().setStretchLastSection(False)
-
-	# TODO: Adjust next line - not working
-        self.view.setEditTriggers(QtGui.QAbstractItemView.DoubleClicked)
 
         # Set root directory to example path chosen earlier by user
         self.view.setRootIndex(model.index(example_path))
@@ -52,7 +49,7 @@ class SelectionWindow(QtGui.QDialog):
         self.setWindowTitle("Choose Items to Delete")
         layout.addWidget(self.view)
 
-        # OK and Cancel buttons
+        # Add OK and Cancel buttons
         buttons = QtGui.QDialogButtonBox(
             QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel,
             QtCore.Qt.Horizontal, self)
@@ -101,7 +98,7 @@ class CheckableDirModel(QtGui.QDirModel):
     def get_savepath(self):
         """Allow user to set name and directory of JSON to be created."""
         savepath = str(QFileDialog.getSaveFileName(anchor_win, 'Save As'))
-        if not savepath.endswith('.json'):  #Add file extension if user didn't
+        if not savepath.endswith('.json'):  # Add file extension if user didn't
             savepath += '.json'
         return savepath
 
@@ -179,7 +176,7 @@ if __name__ == '__main__':
     # Allow user to choose directory to populate checkable directory model
     example_path = str(QFileDialog.getExistingDirectory(anchor_win, 'Select Example Directory'))
 
-    # Create and display custom SelectionWindow
+    # Create and display custom SelectionWindow so user can select files to delete
     win = SelectionWindow()
     win.show()
 
