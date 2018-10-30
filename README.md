@@ -1,4 +1,4 @@
-# CustomClean 1.2.0
+# CustomClean 2.0.0
 > For HCP outputs and other things you need to clean up!
 
 ## Usage
@@ -20,7 +20,7 @@
 
   * Takes two required arguments: -j --json [path to JSON] -d --dir [path to target directory]
   * May take one optional argument: -p --pattern [string to use for series of folders (e.g. -p "REST" to
-    use same deletion pattern for REST1, REST2 etc. directories) 
+    use same deletion pattern for REST1, REST2 etc. directories)
   * Error information will display on the console.
   * Success information (i.e. what files, directories, and links were removed)
   will be written to a file at the top level of the target directory called
