@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 # ------------------------------------------------------------------------
-# CustomClean GUI version 1.2.0
+# CustomClean GUI version 2.0.0
 #
 # GUI that helps user create a JSON showing a pattern of unwanted files/folders/links
 # that can be later applied to many directories using the main CustomClean script.

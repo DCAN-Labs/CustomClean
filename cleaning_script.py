@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 # ------------------------------------------------------------------------
-# CustomClean version 1.2.0
+# CustomClean version 2.0.0
 #
 # Cleanup script that removes unwanted files/folders/links in a given directory
 # based on a JSON created by the CustomClean GUI.
