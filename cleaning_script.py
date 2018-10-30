@@ -1,8 +1,8 @@
-#! /usr/global/bin/python
+#! /usr/bin/env python
 
 # ------------------------------------------------------------------------
 # CustomClean version 1.2.0
-#  
+#
 # Cleanup script that removes unwanted files/folders/links in a given directory
 # based on a JSON created by the CustomClean GUI.
 #
@@ -42,14 +42,14 @@ Should have an identical folder structure to the one in the cleaning JSON.""")
 
     parser.add_argument('-p', '--pattern', dest='pattern', required=False,
                         help="""String that a series of folders that should be
-treated identically will contain. e.g. REST will cause REST1, REST2, etc. to 
+treated identically will contain. e.g. REST will cause REST1, REST2, etc. to
 follow deletion pattern given for contents of REST1 in the cleaning JSON.""")
 
     return parser
 
 
 
-def get_files_to_delete(d):    
+def get_files_to_delete(d):
     for k in d:
         if 'state' not in d[k]:
             get_files_to_delete(d[k])
@@ -68,16 +68,17 @@ def get_file_states(d):
     return status_list
 
 def get_dirs_to_delete(d):
+    # At top level, we have recorded the absolute path.
     for k in d:
         files = {}
-        if k != 'files':
+        if k != '.':
             get_dirs_to_delete(d[k])
         else:
             files.update(d[k])
             file_statuses = get_file_states(files)
 
             unique_file_statuses = set(file_statuses)
-   
+
             if len(unique_file_statuses) == 1:
                 file_status_value = unique_file_statuses.pop()
                 if (file_status_value == 'delete'):
@@ -108,7 +109,7 @@ def remove(target_paths):
 
     for p in target_paths:
         str_p = str(p)
-    
+
         if os.path.isdir(str_p):
 	    try:
 	        shutil.rmtree(str_p)

@@ -1,8 +1,8 @@
-#! /usr/global/bin/python
+#! /usr/bin/env python
 
 # ------------------------------------------------------------------------
 # CustomClean GUI version 1.2.0
-#  
+#
 # GUI that helps user create a JSON showing a pattern of unwanted files/folders/links
 # that can be later applied to many directories using the main CustomClean script.
 #
@@ -43,7 +43,7 @@ class SelectionWindow(QtGui.QDialog):
 
         # Set root directory to example path chosen earlier by user
         self.view.setRootIndex(model.index(example_path))
-	
+
 	# Set appearance of SelectionWindow object
         self.resize(1000, 500)
         self.setWindowTitle("Choose Items to Delete")
@@ -90,7 +90,7 @@ class CheckableDirModel(QtGui.QDirModel):
                     self.checks.pop(i)
             self.checks[index] = value
             self.layoutChanged.emit()
-            return True 
+            return True
 
         return QtGui.QDirModel.setData(self, index, value, role)
 
@@ -125,25 +125,26 @@ class CheckableDirModel(QtGui.QDirModel):
 
         for path, dirs, files in os.walk(rootdir):
             path_as_list = path[start:].split(os.sep)
+            path_as_list[0] = rootdir
 
-            files_in_dir = {'files': {}}
+            files_in_dir = {'.' : {}}
 
             for f in files:
 
                 filepath = os.path.join(path, f)
                 rel_path = os.path.relpath(filepath, rootdir).lstrip(os.sep)
- 
+
                 # Record relative path for each file
 		if ('REST' not in rel_path) or ('1' in rel_path):
-                    files_in_dir['files'][f] = {}
-                    files_in_dir['files'][f]['rel_path'] = rel_path
+                    files_in_dir['.'][f] = {}
+                    files_in_dir['.'][f]['rel_path'] = rel_path
 
                 # Record whether each file was marked as 'keep' or 'delete' based on checked status
-                if f in files_in_dir['files']:
+                if f in files_in_dir['.']:
                     if self.checkState(self.index(os.path.join(path, f))) == QtCore.Qt.Checked:
-                        files_in_dir['files'][f]['state'] = 'delete'
+                        files_in_dir['.'][f]['state'] = 'delete'
                     else:
-                        files_in_dir['files'][f]['state'] = 'keep'                    
+                        files_in_dir['.'][f]['state'] = 'keep'
 
             # Create master dictionary with all file/directory information
             full_dir = reduce(dict.get, path_as_list[:-1], dir_dict)
