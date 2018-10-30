@@ -18,8 +18,8 @@ import glob
 to_delete = []
 
 PROG = 'CustomClean'
-VERSION = '1.2.0'
-LAST_MOD = '4-27-16'
+VERSION = '2.0.0'
+LAST_MOD = '10-30-18'
 
 program_desc = """%(prog)s v%(ver)s:
 Cleanup script that removes unwanted files/folders/links in a given directory
