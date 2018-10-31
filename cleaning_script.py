@@ -55,7 +55,8 @@ def get_files_to_delete(d):
             get_files_to_delete(d[k])
         else:
             if d[k]['state'] == 'delete':
-                to_delete.insert(0, d[k]['rel_path'])
+                # to_delete.insert(0, d[k]['rel_path'])
+                to_delete.append(d[k]['rel_path'])
 
 
 def get_file_states(d):
@@ -67,6 +68,7 @@ def get_file_states(d):
                 status_list.extend(get_file_states(v))
     return status_list
 
+# FAULTY FUNCTION: Assumes just because all subfiles are deleted that you want to delete the directory
 def get_dirs_to_delete(d):
     # At top level, we have recorded the absolute path.
     for k in d:
@@ -188,8 +190,8 @@ if __name__ == '__main__':
         dirs_with_pattern = get_num_dirs(pattern)
 
     # Make list of all files/folders/etc. to be removed
-    get_dirs_to_delete(json_data)  # Get directories first
-    to_delete.reverse()  # Make sure lower level directories get deleted before those above them
+    # get_dirs_to_delete(json_data)  # Get directories first
+    # to_delete.reverse()  # Make sure lower level directories get deleted before those above them
     get_files_to_delete(json_data)  # Now add files at beginning so they get deleted first of all
 
     # Create absolute paths for items in to_delete
