@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 # ------------------------------------------------------------------------
-# CustomClean version 2.0.0
+# CustomClean Cleaning Script
 #
 # Cleanup script that removes unwanted files/folders/links in a given directory
 # based on a JSON created by the CustomClean GUI.
@@ -18,8 +18,7 @@ import glob
 to_delete = []
 
 PROG = 'CustomClean'
-VERSION = '2.0.0'
-LAST_MOD = '10-30-18'
+VERSION = '2.0.2'
 
 program_desc = """%(prog)s v%(ver)s:
 Cleanup script that removes unwanted files/folders/links in a given directory
