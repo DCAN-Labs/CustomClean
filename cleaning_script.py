@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 # ------------------------------------------------------------------------
 # CustomClean Cleaning Script
@@ -14,6 +14,7 @@ import shutil
 import json
 import argparse
 import glob
+import re
 
 to_delete = []
 
@@ -29,7 +30,9 @@ Use -j /path/to/cleaning/JSON and -d /path/to/directory/to/be/cleaned.
 
 def get_parser():
 
-    parser = argparse.ArgumentParser(description=program_desc, prog=PROG, version=VERSION)
+    # ArgumentParser has no "version" parmeter. KJS 11/9/18.
+    #parser = argparse.ArgumentParser(description=program_desc, prog=PROG, version=VERSION)
+    parser = argparse.ArgumentParser(description=program_desc, prog=PROG)
 
     parser.add_argument('-j', '--json', dest='json', required=True,
                         help="""Absolute path to a cleaning JSON as created by the CustomClean
@@ -40,64 +43,46 @@ GUI.""")
 Should have an identical folder structure to the one in the cleaning JSON.""")
 
     parser.add_argument('-p', '--pattern', dest='pattern', required=False,
-                        help="""String that a series of folders that should be
-treated identically will contain. e.g. REST will cause REST1, REST2, etc. to
-follow deletion pattern given for contents of REST1 in the cleaning JSON.""")
+                        help="""Pattern string for folders that should be
+treated identically. E.g. task-rest* will cause task-rest01, task-rest)2, etc. to
+follow deletion pattern given for contents of task-rest01 in the cleaning JSON.""")
 
     return parser
 
+def is_dir(d):
+    if ('folder' == d['type']):
+        return True
+    else:
+        return False
 
+def is_file(d):
+    if ('file' == d['type']):
+        return True
+    else:
+        return False
+
+def next(d):
+    return d['children']
 
 def get_files_to_delete(d):
-    for k in d:
-        if 'state' not in d[k]:
-            get_files_to_delete(d[k])
+    # to_delete is a global list.
+    for k, v in d.items():
+        if is_dir(v):
+            get_files_to_delete(next(v))
         else:
-            if d[k]['state'] == 'delete':
+            if 'delete' == v['state']:
                 # to_delete.insert(0, d[k]['rel_path'])
-                to_delete.append(d[k]['rel_path'])
+                to_delete.append(v['rel_path'])
 
-
-def get_file_states(d):
-    status_list = []
-    for k, v in d.iteritems():
-        if type(d[k]) == dict:
-            if 'state' in d[k].keys():
-                status_list.append(d[k]['state'])
-                status_list.extend(get_file_states(v))
-    return status_list
-
-# FAULTY FUNCTION: Assumes just because all subfiles are deleted that you want to delete the directory
 def get_dirs_to_delete(d):
-    # At top level, we have recorded the absolute path.
-    for k in d:
-        files = {}
-        if k != '.':
-            get_dirs_to_delete(d[k])
-        else:
-            files.update(d[k])
-            file_statuses = get_file_states(files)
+    # to_delete is a global list.
+    for k, v in d.items():
+        if is_dir(v):
+            if 'delete' == v['state']:
+                to_delete.append(v['rel_path'])
+            get_dirs_to_delete(next(v))
 
-            unique_file_statuses = set(file_statuses)
 
-            if len(unique_file_statuses) == 1:
-                file_status_value = unique_file_statuses.pop()
-                if (file_status_value == 'delete'):
-                    dir_child_key = files.keys()[-1]
-                    dir_to_delete = '/'.join(files[dir_child_key]['rel_path'].split('/')[0:-1])
-                    to_delete.append(dir_to_delete)
-
-def get_num_dirs(pattern):
-
-    # Get number of folders following pattern given
-    pattern_num = 0
-    for k in json_data:
-        if type(json_data[k]) == dict:
-            for subk in json_data[k]:
-                if pattern in subk:
-                    pattern_num += 1
-
-    return pattern_num
 
 def remove(target_paths):
     """
@@ -112,58 +97,118 @@ def remove(target_paths):
         str_p = str(p)
 
         if os.path.isdir(str_p):
-	    try:
-	        shutil.rmtree(str_p)
-	        success += 'Removed directory ' + str_p + '\n'
-	    except IOError, OSError:
-	        sys.stderr.write('You do not have permissions to delete all of the specified directories.')
+            try:
+                shutil.rmtree(str_p)
+                success += 'Removed directory ' + str_p + '\n'
+            except IOError as err:
+                sys.stderr.write('You do not have permissions to delete all of the specified directories.')
+                sys.stderr.write('IOError: %s.' % err)
+                sys.exit(code=1)
+            except OSError as err:
+                sys.stderr.write('You do not have permissions to delete all of the specified directories.')
+                sys.stderr.write('OSError: %s.' % err)
                 sys.exit(code=1)
         elif os.path.islink(str_p):
-	    try:
-	        os.unlink(str_p)
-	        success += 'Unlinked ' + str_p + '\n'
-	    except IOError, OSError:
-	        sys.stderr.write('You do not have permissions to remove all of the specified links.')
-                sys.exit(code=2)
+            try:
+                os.unlink(str_p)
+                success += 'Unlinked ' + str_p + '\n'
+            except IOError as err:
+                sys.stderr.write('You do not have permissions to delete all of the specified links.')
+                sys.stderr.write('IOError: %s.' % err)
+                sys.exit(code=1)
+            except OSError as err:
+                sys.stderr.write('You do not have permissions to delete all of the specified links.')
+                sys.stderr.write('OSError: %s.' % err)
+                sys.exit(code=1)
         elif os.path.isfile(str_p):
-	    try:
-	        os.remove(str_p)
-	        success += 'Removed file ' + str_p + '\n'
-	    except IOError, OSError:
-	        sys.stderr.write('You do not have permissions to delete all of the specified files.')
-                sys.exit(code=3)
+            try:
+                os.remove(str_p)
+                success += 'Removed file ' + str_p + '\n'
+            except IOError as err:
+                sys.stderr.write('You do not have permissions to delete all of the specified files.')
+                sys.stderr.write('IOError: %s.' % err)
+                sys.exit(code=1)
+            except OSError as err:
+                sys.stderr.write('You do not have permissions to delete all of the specified files.')
+                sys.stderr.write('OSError: %s.' % err)
+                sys.exit(code=1)
         else:
             not_found += '\n' + str_p
 
     return not_found, success
 
 
-def make_paths(items_to_delete):
-    paths = []
+def apply_patterns(items_to_delete, pattern_list):
 
-    if all(items_to_delete):  #If there are no false/empty values in to_delete
-        for d in items_to_delete:
-            abs_path = os.path.join(base_path, d)
+    abs_paths = []
+
+    # To delete contains relative paths. Get absolute paths.
+    # At the same time, make the list we will work from
+    # here.
+    for item in items_to_delete:
+        abs_path = os.path.join(base_path, item)
+        abs_paths.append(abs_path)
+
+    # Handle patterns. Replace matches in the paths.
+    for pattern in pattern_list:
+
+        for idx, path in enumerate(abs_paths):
+
+            # First, just see if we find each of the parts of the pattern
+            # in the whole path. Doesn't mean it's a match - just a candidate
+            # for further processing.
+            patt_parts = pattern.split('*')
+            found = 0
+            for part in patt_parts:
+                if part in path:
+                    found += 1
+                else:
+                    break
+
+            if len(patt_parts) == found:
+
+                # Break up the path into all of its parts. Only an
+                # actual match if the pattern is wholly in one or more
+                # of its subdirectories.
+                subdirs = path.split(os.sep)
+
+                # To replace whole pattern, use re.
+                re_pattern = re.compile(pattern.replace('*', '.*'))
+
+                new_path = ''
+                for subdir in subdirs:
+                    # In each subdirectory, replace whatever matches
+                    # with the original pattern string.
+                    new_subdir = re.sub(re_pattern, pattern, subdir)
+                    new_path += (os.sep + new_subdir)
+
+                abs_paths[idx]=new_path
+
+    return abs_paths
+
+
+def make_paths(paths_to_delete):
+    # All paths are absolute, and all have patterns imbedded if any matched.
+    # They will be 'expanded' into all paths that match, below.
+
+    if all(paths_to_delete):  #If there are no false/empty values in to_delete
+
+        new_paths = []
+
+        for path in paths_to_delete:
             # Deal with paths that have wildcards in them
-	    if '*' in abs_path:
-                wildcard_paths = glob.glob(abs_path)
-                paths.extend(wildcard_paths)
+            if '*' in path:
+                wildcard_paths = glob.glob(path)
+                new_paths.extend(wildcard_paths)
             else:
-                paths.append(abs_path)
+                new_paths.append(path)
 
-            if args.pattern:
-    	        # Create corresponding paths for all other folders containing pattern if [pattern]1 is present
-                pattern1 = pattern + '1'
-                if pattern in abs_path:
-                    if dirs_with_pattern:
-                        for x in xrange(2, dirs_with_pattern + 1):
-                            pattern_str = pattern + str(x)
-                            paths.append(abs_path.replace(pattern1, pattern_str))
+        return new_paths
+
     else:
         sys.stderr.write('JSON prescribes deleting entire target directory. Please generate another JSON and try again.')
         sys.exit(code=4)
 
-    return paths
 
 
 if __name__ == '__main__':
@@ -171,13 +216,19 @@ if __name__ == '__main__':
     parser = get_parser()
 
     args = parser.parse_args()
+    json_data = {}
+    pattern_list = []
 
-    # Arguments are path to JSON, then path to folder on which to apply cleaning pattern within JSON
+    # Argument is path to JSON, and, optionally, a single pattern.
+    # JSON data may contain patterns as well. If the user supplies a pattern,
+    # it will be added to the list.
     try:
         with open(args.json) as j:
-            json_data = json.load(j)
+            whole_json_data = json.load(j)
+            pattern_list = whole_json_data['pattern_list']
+            json_data = whole_json_data['file_system_data']
     except IOError:
-        sys.stderr.write('The specified cleaning JSON could not be found.')
+        sys.stderr.write('The specified cleaning JSON could not be read.')
         sys.exit(code=5)
 
     base_path = args.dir
@@ -185,19 +236,25 @@ if __name__ == '__main__':
         base_path = base_path + '/'
 
     if args.pattern:
-        pattern = args.pattern
-        dirs_with_pattern = get_num_dirs(pattern)
+        pattern_list.append(args.pattern)
 
     # Make list of all files/folders/etc. to be removed
-    # get_dirs_to_delete(json_data)  # Get directories first
-    # to_delete.reverse()  # Make sure lower level directories get deleted before those above them
-    get_files_to_delete(json_data)  # Now add files at beginning so they get deleted first of all
+    # Note: This is done in reverse: we get dirs first, top down. Then files.
+    #       But we do the processing in reverse, because we need to delete
+    #       files, then subdirectories, then parent directories.
+    #       Thus the 'reverse' at the end.
+    get_dirs_to_delete(json_data)
+    get_files_to_delete(json_data)
+    to_delete.reverse()
 
-    # Create absolute paths for items in to_delete
-    paths = make_paths(to_delete)
+    # Create absolute paths, with patterns in them, for items in to_delete
+    patterned_paths = apply_patterns(to_delete, pattern_list)
+
+    # Use os to expand *'s.
+    target_paths = make_paths(patterned_paths)
 
     # Delete/remove/unlink all specified files/directories/links
-    not_found_msg, success_msg = remove(paths)
+    not_found_msg, success_msg = remove(target_paths)
 
     # Send output about files not found to stderr if applicable
     if '\n' in not_found_msg:
