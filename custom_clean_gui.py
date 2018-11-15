@@ -69,27 +69,43 @@ class CheckableDirModel(QAbstractItemModel):
     To the viewer, it is all the same.
     """
 
-    def __init__(self, data, pattern_list=None, parent=None):
+    def __init__(self, data, pattern_list, parent=None):
         QAbstractItemModel.__init__(self, parent)
 
         self.rootdir = None
         self.fs_data = None
         self.patterns = {}
 
+        for pattern in pattern_list:
+            re_pattern = re.compile(pattern.replace('*', '.*'))
+            self.patterns[pattern] = re_pattern
+
         # Check data for a path to a directory
         if isinstance(data, str):
             if os.path.isdir(data):
                 self.rootdir = data.rstrip(os.sep)
-                for pattern in pattern_list:
-                    re_pattern = re.compile(pattern.replace('*', '.*'))
-                    self.patterns[pattern] = re_pattern
-
                 self.fs_data = self.pop_model_from_file_system()
 
+        elif isinstance(data, dict):
+            print ('Using data from a json file')
+            # Get the rootdir from the top-level dictionary.
+            for key, val in data.items():
+                self.rootdir = key
+                self.fs_data = {}
+                self.fs_data[key] = self.make_dir_dict(self.rootdir, '.')
+                # Call pop_model_from_data with the top-level data,
+                # the top-level of the new dictionary, and an
+                # empty list for the relative path.
+                self.pop_model_from_data(val, self.fs_data[key], [])
+
         else:
-            # Must be data from a JSON file.
-            print ('Data must have come from a JSON file')
-            self.pop_model_from_data(data)
+            QMessageBox.warning(self, appId,
+                    'The application does not recognize the data.\n' +
+                    'Please choose another file or directory.',
+                    QMessageBox.Ok)
+            return
+
+
 
     def getFSData(self):
         """
@@ -97,11 +113,11 @@ class CheckableDirModel(QAbstractItemModel):
         """
         return self.fs_data
 
-    def make_file_dict(self, name, rel_path, size):
+    def make_file_dict(self, name, rel_path, state, size):
         file_dict = {}
         file_dict['name'] = name
         file_dict['type'] = 'file'
-        file_dict['state'] = 'keep'
+        file_dict['state'] = state
         file_dict['rel_path'] = rel_path
         file_dict['size'] = size
 
@@ -242,7 +258,7 @@ class CheckableDirModel(QAbstractItemModel):
                 file_path = os.path.join(cur_path, filename)
                 file_rel_path = os.path.relpath(file_path, rootdir)
                 size = os.stat(file_path).st_size
-                cur_file_dict = self.make_file_dict(filename, file_rel_path, size)
+                cur_file_dict = self.make_file_dict(filename, file_rel_path, 'keep', size)
                 # Add this dictionary using the filename as its key.
                 cur_dir_dict['children'][filename] = cur_file_dict
 
@@ -258,11 +274,46 @@ class CheckableDirModel(QAbstractItemModel):
         return fs_data
 
 
-    def pop_model_from_data(self, json_data):
-        # JSON file contains 2 objects - list of patterns and dictionary
-        # model of a file system directory with prior choices made.
-        # TODO: This one is for the next version.
-        raise NotImplementedError
+    def pop_model_from_data(self, data, parent, rel_path_list):
+        # KJS: This is actually JUST or converting an old file. Data from new files
+        # will already be in the expected format.
+        for key, val in data.items():
+            if '.' == key:
+                # Just means the list of files in the directory is in the
+                # next level down. Just jump down to next level of the data
+                # and use the same parent and path.
+                self.pop_model_from_data(val, parent, rel_path_list)
+
+            elif 'state' in val:
+                # This is a file. We have all of the information we need
+                # from the old data.
+                name = key
+                state = val['state']
+                rel_path = val['rel_path']
+                size = 0 # this is for the next version; not to worry.
+                parent['children'][name] = self.make_file_dict(name, rel_path, state, size)
+
+            else:
+                # This is a directory entry. We have no data, except
+                # its name and children.
+                # Add the key to the list that will be passed to
+                # children of this path.
+                rel_path_list.append(key)
+                rel_path = ''
+                for path in rel_path_list:
+                    if not rel_path:
+                        rel_path = path
+                    else:
+                        rel_path = os.path.join(rel_path, path)
+
+                print('KJS: key: %s\t\trel_path:%s' % (key, rel_path))
+                parent['children'][key] = self.make_dir_dict(key, rel_path)
+                # Send the next level of old data, next level of new data,
+                # and the new path.
+                self.pop_model_from_data(val, parent['children'][key], rel_path_list)
+
+                # Pop this key back off the list.
+                rel_path_list.pop()
 
 
     def get_start_of_rel_path(self, root):
@@ -358,13 +409,13 @@ class MainWindow(QMainWindow):
         browseButton.setToolTip('Choose files to be deleted from a directory (or representative directory), ' +
                                 'and save choices to a JSON file.')
 
+        # TODO Not yet implemented.
+        #editButton.setEnabled(False)
         editButton = QPushButton('Edit JSON', self)
         editButton.clicked.connect(self.edit)
         editButton.resize(100, 32)
         editButton.move(50, 20)
         editButton.setToolTip('Edit an exisiting JSON file.')
-        # TODO Not yet implemented.
-        editButton.setEnabled(False)
 
         quitButton = QPushButton('Exit', self)
         quitButton.clicked.connect(self.exit)
@@ -407,25 +458,46 @@ class MainWindow(QMainWindow):
         path = self.get_editable_json()
 
         # If the user cancelled, return to top level.
-        if not path:
+        if not path: return
+
+        # Open the file for read; the file will be closed when it
+        # goes out of scope, and we will reopen for write later.
+        try:
+            with open(path, 'r') as j:
+                whole_json_data = json.load(j)
+
+        except IOERROR as err:
+            sys.stderr.write('The specified cleaning file could not be read.')
+            sys.stderr.write('IOERROR: %s' % err)
             return
 
-        # Open the file for read.
-        # The file will be closed when it goes out of scope;
-        # we will reopen for write later.
-        with open(path, 'r') as j:
-            json_data = json.load(j)
+        # TODO: next version.
+        # The json data contains patterns and FS data:
+        #pattern_list = whole_json_data['pattern_list']
+        #fs_data = whole_json_data['file_system_data']
+        # TODO: now.
+        fs_data = whole_json_data
+        pattern_list = []
 
         # Populate the model with data from the JSON file.
-        #model = CheckableDirModel(json_data, self)
+        model = CheckableDirModel(fs_data, pattern_list, self)
 
+# Note: this part can probably be done higher up, since the same for both?
         # Give model to selection window, allow user to choose files and/or
         # directories to be deleted, save the data.
         #TODO
         #win = SelectionWindow(model)
         #win.show()
 
-        return
+        # Selection window is gone, but all data is in the model.
+        fsData = model.getFSData()
+
+        # Combine the patterns and the file system data into one JSON object.
+        json_dict = {}
+        json_dict['pattern_list'] = pattern_list
+        json_dict['file_system_data'] = fsData
+
+        self.saveJson(json_dict)
 
 
     def exit(self):

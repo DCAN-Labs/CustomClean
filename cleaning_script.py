@@ -16,7 +16,8 @@ import argparse
 import glob
 import re
 
-to_delete = []
+files_to_delete = []
+dirs_to_delete = []
 
 PROG = 'CustomClean'
 VERSION = '2.0.2'
@@ -43,9 +44,9 @@ GUI.""")
 Should have an identical folder structure to the one in the cleaning JSON.""")
 
     parser.add_argument('-p', '--pattern', dest='pattern', required=False,
-                        help="""Pattern string for folders that should be
-treated identically. E.g. task-rest* will cause task-rest01, task-rest)2, etc. to
-follow deletion pattern given for contents of task-rest01 in the cleaning JSON.""")
+                        help="""Pattern string for names that should be
+treated identically. E.g. task-rest* will cause task-rest01, task-rest02, etc. to
+follow deletion pattern given for task-rest01 in the cleaning JSON.""")
 
     return parser
 
@@ -61,26 +62,22 @@ def is_file(d):
     else:
         return False
 
-def next(d):
-    return d['children']
-
 def get_files_to_delete(d):
-    # to_delete is a global list.
+    # files_to_delete is a global list.
     for k, v in d.items():
         if is_dir(v):
-            get_files_to_delete(next(v))
+            get_files_to_delete(v['children'])
         else:
             if 'delete' == v['state']:
-                # to_delete.insert(0, d[k]['rel_path'])
-                to_delete.append(v['rel_path'])
+                files_to_delete.append(v['rel_path'])
 
 def get_dirs_to_delete(d):
-    # to_delete is a global list.
+    # dirs_to_delete is a global list.
     for k, v in d.items():
         if is_dir(v):
             if 'delete' == v['state']:
-                to_delete.append(v['rel_path'])
-            get_dirs_to_delete(next(v))
+                dirs_to_delete.append(v['rel_path'])
+            get_dirs_to_delete(v['children'])
 
 
 
@@ -138,76 +135,69 @@ def remove(target_paths):
     return not_found, success
 
 
+
 def apply_patterns(items_to_delete, pattern_list):
+    # Handle patterns. Replace all matches in the paths.
+    # Note: we make * match any number of numbers and nothing else.
 
-    abs_paths = []
-
-    # To delete contains relative paths. Get absolute paths.
-    # At the same time, make the list we will work from
-    # here.
+    # Start with a copy of the items to be deleted.
+    cur_items = []
     for item in items_to_delete:
-        abs_path = os.path.join(base_path, item)
-        abs_paths.append(abs_path)
+        cur_items.append(item)
 
-    # Handle patterns. Replace matches in the paths.
+    remove_items = []
+    new_items = []
     for pattern in pattern_list:
 
-        for idx, path in enumerate(abs_paths):
+        # Make * match digits and nothing else.
+        re_pattern = re.compile(pattern.replace('*', '[0-9]+'))
 
-            # First, just see if we find each of the parts of the pattern
-            # in the whole path. Doesn't mean it's a match - just a candidate
-            # for further processing.
-            patt_parts = pattern.split('*')
-            found = 0
-            for part in patt_parts:
-                if part in path:
-                    found += 1
-                else:
-                    break
+        for path in cur_items:
+            # Replace all matches of re_pattern with pattern.
+            new_path, subs = re.subn(re_pattern, pattern, path)
+            if subs:
+                if not new_path in new_items:
+                    # One pattern can turn several paths into the same path.
+                    # (Kind of the point.) Eliminate duplicates, or we'll try
+                    # to delete the same path multiple times.
+                    new_items.append(new_path)
 
-            if len(patt_parts) == found:
+                # Add the current path to a list to be removed from the list
+                # outside of the loop.
+                if not path in remove_items:
+                    remove_items.append(path)
 
-                # Break up the path into all of its parts. Only an
-                # actual match if the pattern is wholly in one or more
-                # of its subdirectories.
-                subdirs = path.split(os.sep)
+    # The paths in 'remove_items' are being replaced with one or more patterns.
+    for item in remove_items:
+        cur_items.remove(item)
 
-                # To replace whole pattern, use re.
-                re_pattern = re.compile(pattern.replace('*', '.*'))
+    # Add the new paths.
+    cur_items.extend(new_items)
 
-                new_path = ''
-                for subdir in subdirs:
-                    # In each subdirectory, replace whatever matches
-                    # with the original pattern string.
-                    new_subdir = re.sub(re_pattern, pattern, subdir)
-                    new_path += (os.sep + new_subdir)
-
-                abs_paths[idx]=new_path
-
-    return abs_paths
+    return cur_items
 
 
 def make_paths(paths_to_delete):
-    # All paths are absolute, and all have patterns imbedded if any matched.
-    # They will be 'expanded' into all paths that match, below.
+    # Paths are relative. They have patterns embedded if any matched.
+    # They will be 'expanded' into absolute paths that match, below.
 
-    if all(paths_to_delete):  #If there are no false/empty values in to_delete
+    abs_paths = []
+    # List contains relative paths. Get absolute paths. At the same time,
+    # make the list we will work from here.
+    for path in paths_to_delete:
+        abs_path = os.path.join(base_path, path)
+        abs_paths.append(abs_path)
 
-        new_paths = []
+    new_paths = []
+    for path in abs_paths:
+        # Use OS to deal with paths that have wildcards in them.
+        if ('*' in path) or ('[0-9]' in path):
+            wildcard_paths = glob.glob(path)
+            new_paths.extend(wildcard_paths)
+        else:
+            new_paths.append(path)
 
-        for path in paths_to_delete:
-            # Deal with paths that have wildcards in them
-            if '*' in path:
-                wildcard_paths = glob.glob(path)
-                new_paths.extend(wildcard_paths)
-            else:
-                new_paths.append(path)
-
-        return new_paths
-
-    else:
-        sys.stderr.write('JSON prescribes deleting entire target directory. Please generate another JSON and try again.')
-        sys.exit(code=4)
+    return new_paths
 
 
 
@@ -238,17 +228,21 @@ if __name__ == '__main__':
     if args.pattern:
         pattern_list.append(args.pattern)
 
-    # Make list of all files/folders/etc. to be removed
-    # Note: This is done in reverse: we get dirs first, top down. Then files.
-    #       But we do the processing in reverse, because we need to delete
-    #       files, then subdirectories, then parent directories.
-    #       Thus the 'reverse' at the end.
-    get_dirs_to_delete(json_data)
-    get_files_to_delete(json_data)
-    to_delete.reverse()
+    # Get files to be deleted.
+    get_files_to_delete(json_data) # data now in global list files_to_delete[]
 
-    # Create absolute paths, with patterns in them, for items in to_delete
-    patterned_paths = apply_patterns(to_delete, pattern_list)
+    # Get dirs to be deleted.
+    # Note: we get the dirs top down, but want to process bottom up.
+    #       (we want to delete subdirs before we delete parent dirs).
+    #       Thus the 'reverse'.
+    get_dirs_to_delete(json_data) # data is now in global list dirs_to_delete[]
+    dirs_to_delete.reverse()
+
+    # Must process files before dirs, so add dirs to the end of the list.
+    paths_to_delete = files_to_delete
+    paths_to_delete.extend(dirs_to_delete)
+
+    patterned_paths = apply_patterns(paths_to_delete, pattern_list)
 
     # Use os to expand *'s.
     target_paths = make_paths(patterned_paths)
