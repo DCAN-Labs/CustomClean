@@ -141,64 +141,79 @@ def apply_patterns(items_to_delete, pattern_list):
     # Note: we make * match any number of numbers and nothing else.
 
     # Start with a copy of the items to be deleted.
-    cur_items = []
-    for item in items_to_delete:
-        cur_items.append(item)
+    cur_items = set()
+    cur_items.update(items_to_delete)
 
-    remove_items = []
-    new_items = []
     for pattern in pattern_list:
+        remove_items = set()
+        new_items = set()
 
         # Make * match digits and nothing else.
         re_pattern = re.compile(pattern.replace('*', '[0-9]+'))
 
         for path in cur_items:
             # Replace all matches of re_pattern with pattern.
-            new_path, subs = re.subn(re_pattern, pattern, path)
+            new_path, subs = re.subn(re_pattern, re_pattern.pattern, path)
             if subs:
-                if not new_path in new_items:
-                    # One pattern can turn several paths into the same path.
-                    # (Kind of the point.) Eliminate duplicates, or we'll try
-                    # to delete the same path multiple times.
-                    new_items.append(new_path)
+                new_items.add(new_path)
 
-                # Add the current path to a list to be removed from the list
-                # outside of the loop.
-                if not path in remove_items:
-                    remove_items.append(path)
+                # Save the original string to a list to be removed from
+                # cur_items, outside of the loop. (Never change the loop
+                # variable inside of the loop.)
+                remove_items.add(path)
 
-    # The paths in 'remove_items' are being replaced with one or more patterns.
-    for item in remove_items:
-        cur_items.remove(item)
+        # The paths in 'remove_items' are being replaced with one or more patterns.
+        for item in remove_items:
+            cur_items.remove(item)
 
-    # Add the new paths.
-    cur_items.extend(new_items)
+        # Add the new paths.
+        cur_items.update(new_items)
 
     return cur_items
+
+def expand_path(path_to_expand):
+    # The patterns to be expanded are regex patterns. But glob does not handle
+    # those. (You can use [0-9] but not [0-9]+.) So we will convert patterns
+    # to glob-style patterns (*) which will find a superset of the paths we
+    # want to match, then use regex to narrow to those that actually match.
+    glob_list = []
+    match_set = set()
+
+    # Get the absolute path, or OS cannot search.
+    abs_path = os.path.join(base_path, path_to_expand)
+
+    glob_pattern = abs_path.replace('[0-9]+', '*')
+    glob_list = glob.glob(glob_pattern)
+
+    if glob_list is None:
+        print ('There were no glob paths matching the pattern:\n\t%s' % abs_path)
+
+    else:
+        re_match_pattern = re.compile(abs_path)
+        for path in glob_list:
+            if re_match_pattern.match(path) is not None:
+                match_set.add(path)
+
+    return match_set
+
 
 
 def make_paths(paths_to_delete):
     # Paths are relative. They have patterns embedded if any matched.
     # They will be 'expanded' into absolute paths that match, below.
 
-    abs_paths = []
-    # List contains relative paths. Get absolute paths. At the same time,
-    # make the list we will work from here.
+    abs_paths = set()
+
     for path in paths_to_delete:
-        abs_path = os.path.join(base_path, path)
-        abs_paths.append(abs_path)
-
-    new_paths = []
-    for path in abs_paths:
-        # Use OS to deal with paths that have wildcards in them.
         if ('*' in path) or ('[0-9]' in path):
-            wildcard_paths = glob.glob(path)
-            new_paths.extend(wildcard_paths)
+            wildcard_paths = expand_path(path)
+            abs_paths.update(wildcard_paths)
         else:
-            new_paths.append(path)
+            # No patterns here. Just get the absolute path.
+            abs_path = os.path.join(base_path, path)
+            abs_paths.add(abs_path)
 
-    return new_paths
-
+    return abs_paths
 
 
 if __name__ == '__main__':
@@ -244,7 +259,7 @@ if __name__ == '__main__':
 
     patterned_paths = apply_patterns(paths_to_delete, pattern_list)
 
-    # Use os to expand *'s.
+    # Use OS to get absolute paths and to expand patterned paths.
     target_paths = make_paths(patterned_paths)
 
     # Delete/remove/unlink all specified files/directories/links
