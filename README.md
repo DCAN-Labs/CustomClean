@@ -1,7 +1,14 @@
-# CustomClean 2.0.0
+# CustomClean
+
 > For HCP outputs and other things you need to clean up!
 
+## Installation
+
+1. Requires Python.
+2. Clone custom-clean repo to the desired location.
+
 ## Cleaning JSON file
+
 > The file of rules and patterns to be applied to the folder being cleaned.
 
 The JSON file contains 2 elements:
@@ -12,6 +19,7 @@ The JSON file contains 2 elements:
   * The "pattern_list" whose value is a list of pattern strings.
 
 ## Patterns
+
 > If the data to be cleaned contains numbered files or folders, you can choose
 to apply a rule (keep or delete) for one numbered file to all matching,
 numbered files and folders.
@@ -20,9 +28,11 @@ To do this, either add a pattern to the "pattern_list" or use the pattern flag
 in the cleaning script, below.
 
 #### Example 1
+
 > You have BIDS data and a lot of files and folder contain strings like
 "task-rest_run-01". You don't know how many runs there are going to be, but
 you want the rules for all task-rest runs to be the same.
+
  * Put rules in your tree for files and folders whose names contain "task-rest_run-01".
  * Add the pattern "task-rest_run-\*" to the list value of the "pattern_list"
 element. (The \* is shorthand for all numbers.)
@@ -36,8 +46,10 @@ task-rest), your pattern can be just "run-\*". Just be a little careful with
 patterns until you get used to them.
 
 #### Example 2
+
 > There is a set of files in your data called temp01, temp02, .... Again, you
 don't know how many there will be, but you want them all gone.
+
 * Make a rule for a file called temp0 (or temp6 or temp382 - doesn't matter,
 just temp followed by a number). Set the value of its "state" to "delete".
 * Add a pattern to the list for "temp*".
@@ -47,6 +59,7 @@ disappear. Only files with the string "temp" followed directly by a number.
 
 
 ## CustomClean Cleaning Script (`cleaning_script.py`)
+
 > Delete things in a given directory based on the rules and patterns given in
 the JSON.
 
@@ -64,12 +77,7 @@ of the target directory.
 
 
 ## CustomClean GUI
+
 > **NOTE** As of 2.0.0, the cleaning script does not work with JSON files
 created by the CustomClean GUI. To use the GUI and a cleaning script, use an
 older version of CustomClean (pre 2.0.0). We hope to remedy this soon!
-
-## Installation
-1. Requires Python.
-2. Clone custom-clean repo to the desired location.
-
-
