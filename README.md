@@ -1,6 +1,6 @@
 # CustomClean
 
-> After a pipeline is run, this pipeline cleans directories (removes files that you no longer need). An example of a use case is for abcd-hcp-pipeline processing outputs.
+> Cleanup script that removes unwanted files/folders/links in a given directory based on a JSON.
 
 ## Installation
 
@@ -76,8 +76,3 @@ be written to a file called `custom_clean_success_record.txt` at the top level
 of the target directory.
 
 
-## CustomClean GUI
-
-> **NOTE** As of 2.0.0, the cleaning script does not work with JSON files
-created by the CustomClean GUI. To use the GUI and a cleaning script, use an
-older version of CustomClean (pre 2.0.0). We hope to remedy this soon!
