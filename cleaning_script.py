@@ -8,6 +8,8 @@
 #
 # Rachel Klein, January 2017
 
+# TODO: Use triple quotes instead of hashes for function docstrings
+
 import sys
 import os
 import shutil
@@ -16,6 +18,7 @@ import argparse
 import glob
 import re
 
+# TODO: Change these global variables into local variables passed between functions
 files_to_delete = []
 dirs_to_delete = []
 
@@ -93,6 +96,7 @@ def remove(target_paths):
     for p in target_paths:
         str_p = str(p)
 
+        # TODO: Clean up redundant code (this whole block)
         if os.path.isdir(str_p):
             try:
                 shutil.rmtree(str_p)
@@ -204,7 +208,7 @@ def make_paths(paths_to_delete):
 
     abs_paths = set()
 
-    for path in paths_to_delete:
+    for path in paths_to_delete:  # TODO: Add comments explaining why we are making a path
         if ('*' in path) or ('[0-9]' in path):
             wildcard_paths = expand_path(path)
             abs_paths.update(wildcard_paths)
