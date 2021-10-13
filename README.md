@@ -1,6 +1,6 @@
 # CustomClean
 
-> For HCP outputs and other things you need to clean up!
+> After a pipeline is run, this pipeline cleans directories (removes files that you no longer need). An example of a use case is for abcd-hcp-pipeline processing outputs.
 
 ## Installation
 
