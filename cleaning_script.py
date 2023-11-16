@@ -21,7 +21,7 @@ files_to_delete = []
 dirs_to_delete = []
 
 PROG = 'CustomClean'
-VERSION = '2.0.2'
+VERSION = '2.0.3'
 
 program_desc = """%(prog)s v%(ver)s:
 Cleanup script that removes unwanted files/folders/links in a given directory
