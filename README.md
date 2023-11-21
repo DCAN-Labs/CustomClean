@@ -78,6 +78,6 @@ of the target directory.
 
 ## CustomClean GUI
 
-> **NOTE** As of 2.0.0, the cleaning script does not work with JSON files
-created by the CustomClean GUI. To use the GUI and a cleaning script, use an
-older version of CustomClean (pre 2.0.0). We hope to remedy this soon!
+> **NOTE** The GUI is no longer being maintained. In additiona, as of 2.0.0, the cleaning script does not work with JSON files
+created by the CustomClean GUI. If you still wish to tru using the GUI and a cleaning script, use an
+older version of CustomClean (pre 2.0.0).
