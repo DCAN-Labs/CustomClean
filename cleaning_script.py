@@ -15,12 +15,13 @@ import json
 import argparse
 import glob
 import re
+import fnmatch
 
 files_to_delete = []
 dirs_to_delete = []
 
 PROG = 'CustomClean'
-VERSION = '2.0.2'
+VERSION = '2.0.3'
 
 program_desc = """%(prog)s v%(ver)s:
 Cleanup script that removes unwanted files/folders/links in a given directory
@@ -189,7 +190,7 @@ def expand_path(path_to_expand):
         print ('There were no glob paths matching the pattern:\n\t%s' % abs_path)
 
     else:
-        re_match_pattern = re.compile(abs_path)
+        re_match_pattern = re.compile(fnmatch.translate(abs_path))
         for path in glob_list:
             if re_match_pattern.match(path) is not None:
                 match_set.add(path)
